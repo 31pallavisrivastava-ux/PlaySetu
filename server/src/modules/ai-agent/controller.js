@@ -1,7 +1,15 @@
 import { z } from 'zod';
 import * as orchestrator from './orchestrator.js';
 
-const chatSchema = z.object({ message: z.string().min(1) });
+const chatSchema = z.object({
+  message: z.string().min(1),
+  location: z
+    .object({
+      lat: z.number().min(-90).max(90),
+      lng: z.number().min(-180).max(180),
+    })
+    .optional(),
+});
 const bookSchema = z.object({ slotId: z.string().uuid() });
 const recommendSchema = z.object({
   sportType: z.string().optional(),
@@ -9,8 +17,8 @@ const recommendSchema = z.object({
 });
 
 export async function chat(req, res) {
-  const { message } = chatSchema.parse(req.body);
-  const result = await orchestrator.handleChat(req.user.id, message);
+  const { message, location } = chatSchema.parse(req.body);
+  const result = await orchestrator.handleChat(req.user.id, message, location);
   res.json({ success: true, data: result });
 }
 

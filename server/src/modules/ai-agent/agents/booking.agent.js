@@ -4,18 +4,21 @@ import { logger } from '../../../shared/logger/logger.js';
 import { SPORTS_ASSISTANT_SYSTEM } from '../prompts/system.prompt.js';
 import { getGeminiToolDeclarations } from '../gemini/declarations.js';
 import { isGeminiRecoverableError, toAppError } from '../gemini/errors.js';
-import { runSearchFacility } from '../tools/searchFacility.tool.js';
-import { runGetSlots } from '../tools/getSlots.tool.js';
-import { runCreateBooking } from '../tools/booking.tool.js';
-import { runSendNotification } from '../tools/notification.tool.js';
+import { runSearchVenues } from '../tools/searchVenues.tool.js';
+import { runCheckAvailability } from '../tools/checkAvailability.tool.js';
+import { runBookSlot } from '../tools/bookSlot.tool.js';
+import { runCancelBooking } from '../tools/cancelBooking.tool.js';
+import { runWebSearch } from '../tools/webSearch.tool.js';
 
 const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+// Primary model comes from env.GEMINI_MODEL (default: gemini-3.5-flash)
 
 const toolRunners = {
-  search_facility: runSearchFacility,
-  get_slots: runGetSlots,
-  create_booking: (args, ctx) => runCreateBooking(args, ctx.userId),
-  send_notification: (args, ctx) => runSendNotification(args, ctx.userId),
+  search_venues: runSearchVenues,
+  check_availability: runCheckAvailability,
+  book_slot: runBookSlot,
+  cancel_booking: runCancelBooking,
+  web_search: runWebSearch,
 };
 
 function buildContents(history, userMessage) {
@@ -28,6 +31,11 @@ function buildContents(history, userMessage) {
   }
   contents.push({ role: 'user', parts: [{ text: userMessage }] });
   return contents;
+}
+
+function toFunctionResponse(result) {
+  if (result && typeof result === 'object' && !Array.isArray(result)) return result;
+  return { result };
 }
 
 function parseFunctionArgs(functionCall) {
@@ -59,9 +67,7 @@ async function generateWithTools(ai, { contents, declarations }) {
           systemInstruction: SPORTS_ASSISTANT_SYSTEM,
           tools: [{ functionDeclarations: declarations }],
           toolConfig: {
-            functionCallingConfig: {
-              mode: FunctionCallingConfigMode.AUTO,
-            },
+            functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO },
           },
         },
       });
@@ -74,10 +80,12 @@ async function generateWithTools(ai, { contents, declarations }) {
   throw lastError;
 }
 
-export async function runBookingAgent({ message, userId, history = [] }) {
+export async function runBookingAgent({ message, userId, history = [], location }) {
   if (!env.GEMINI_API_KEY?.trim()) {
     return runFallbackAgent(message, userId);
   }
+
+  const ctx = { userId, lat: location?.lat, lng: location?.lng };
 
   try {
     const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
@@ -105,12 +113,12 @@ export async function runBookingAgent({ message, userId, history = [] }) {
       for (const call of functionCalls) {
         const args = parseFunctionArgs(call);
         const runner = toolRunners[call.name];
-        const result = runner ? await runner(args, { userId }) : { error: 'Unknown tool' };
+        const result = runner ? await runner(args, ctx) : { error: 'Unknown tool' };
         toolResults.push({ tool: call.name, result });
         responseParts.push({
           functionResponse: {
             name: call.name,
-            response: result,
+            response: toFunctionResponse(result),
           },
         });
       }
@@ -125,7 +133,7 @@ export async function runBookingAgent({ message, userId, history = [] }) {
   } catch (err) {
     logger.error('Gemini agent error', { message: err.message, status: err.status, name: err.name });
     if (isGeminiRecoverableError(err)) {
-      const fallback = await runFallbackAgent(message, userId);
+      const fallback = await runFallbackAgent(message, userId, ctx);
       const hint = geminiFailureHint(err);
       return {
         ...fallback,
@@ -138,6 +146,12 @@ export async function runBookingAgent({ message, userId, history = [] }) {
 
 function geminiFailureHint(err) {
   const msg = (err?.message || '').toLowerCase();
+  if (err?.status === 429 || msg.includes('resource_exhausted') || msg.includes('quota')) {
+    return (
+      'Gemini quota exhausted for this API key. Check https://ai.dev/rate-limit or wait for the per-minute quota to refresh. ' +
+      'Showing local DB results in the meantime.'
+    );
+  }
   if (msg.includes('api key') || msg.includes('api_key')) {
     return (
       'Gemini rejected your API key (invalid or revoked). Create a new key at https://aistudio.google.com/apikey ' +
@@ -150,33 +164,36 @@ function geminiFailureHint(err) {
   return 'Gemini is temporarily unavailable; showing local search results.';
 }
 
-async function runFallbackAgent(message, userId) {
+async function runFallbackAgent(message, userId, ctx = {}) {
   const lower = message.toLowerCase();
-  let sportType;
-  if (lower.includes('badminton')) sportType = 'badminton';
-  else if (lower.includes('football') || lower.includes('turf')) sportType = 'football';
-  else if (lower.includes('cricket')) sportType = 'cricket';
-  else if (lower.includes('swim')) sportType = 'swimming';
+  let sport;
+  if (lower.includes('badminton')) sport = 'badminton';
+  else if (lower.includes('football') || lower.includes('turf')) sport = 'football';
+  else if (lower.includes('cricket')) sport = 'cricket';
+  else if (lower.includes('swim')) sport = 'swimming';
 
   const areas = ['gomti', 'chinhat', 'aliganj', 'hazratganj', 'indira', 'lohia', 'jankipuram', 'vikas', 'sai'];
   const areaMatch = areas.find((a) => lower.includes(a));
 
   const budgetMatch = message.match(/₹?\s*(\d+)/);
-  const maxPrice = budgetMatch ? Number(budgetMatch[1]) : undefined;
+  const maxBudget = budgetMatch ? Number(budgetMatch[1]) : undefined;
 
-  const facilities = await runSearchFacility({
-    sportType,
-    area: areaMatch ? areaMatch.charAt(0).toUpperCase() + areaMatch.slice(1) : undefined,
-    maxPrice,
-    limit: 3,
-  });
+  const venues = await runSearchVenues(
+    {
+      sport,
+      area: areaMatch ? areaMatch.charAt(0).toUpperCase() + areaMatch.slice(1) : undefined,
+      maxBudget,
+      limit: 3,
+    },
+    ctx
+  );
 
   return {
     reply:
-      facilities.length > 0
-        ? `Found ${facilities.length} options${areaMatch ? ` near ${areaMatch}` : ''}: ${facilities.map((f) => f.name).join(', ')}. Open a venue to book a slot.`
+      venues.length > 0
+        ? `Found ${venues.length} options${areaMatch ? ` near ${areaMatch}` : ''}: ${venues.map((v) => v.name).join(', ')}. Open a venue to book a slot.`
         : 'No facilities matched. Try "badminton near Gomti Nagar under 500".',
-    toolResults: [{ tool: 'search_facility', result: facilities }],
+    toolResults: [{ tool: 'search_venues', result: venues }],
     userId,
   };
 }

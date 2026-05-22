@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
+import { getUserLocation } from '../lib/geolocation.js';
 import { useAuthStore } from '../store/authStore.js';
 
 const SUGGESTIONS = [
@@ -32,7 +33,11 @@ export default function AiChatPage() {
     setMessages((m) => [...m, { role: 'user', text: userMsg }]);
     setLoading(true);
     try {
-      const { data } = await api.post('/ai/chat', { message: userMsg });
+      const location = await getUserLocation();
+      const { data } = await api.post('/ai/chat', {
+        message: userMsg,
+        ...(location ? { location } : {}),
+      });
       setMessages((m) => [...m, { role: 'assistant', text: data.data.reply }]);
     } catch (err) {
       setMessages((m) => [

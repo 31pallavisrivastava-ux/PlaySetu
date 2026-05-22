@@ -1,9 +1,10 @@
-import { searchFacilityTool } from '../tools/searchFacility.tool.js';
-import { getSlotsTool } from '../tools/getSlots.tool.js';
-import { createBookingTool } from '../tools/booking.tool.js';
-import { sendNotificationTool } from '../tools/notification.tool.js';
+import { searchVenuesTool } from '../tools/searchVenues.tool.js';
+import { checkAvailabilityTool } from '../tools/checkAvailability.tool.js';
+import { bookSlotTool } from '../tools/bookSlot.tool.js';
+import { cancelBookingTool } from '../tools/cancelBooking.tool.js';
+import { webSearchTool } from '../tools/webSearch.tool.js';
 
-const openAiStyleTools = [searchFacilityTool, getSlotsTool, createBookingTool, sendNotificationTool];
+const openAiStyleTools = [searchVenuesTool, checkAvailabilityTool, bookSlotTool, cancelBookingTool, webSearchTool];
 
 /** Strip fields Gemini JSON schema rejects (e.g. default) */
 function sanitizeSchema(schema) {

@@ -7,10 +7,14 @@ export function isGeminiRecoverableError(err) {
     err.status === 400 ||
     err.status === 401 ||
     err.status === 403 ||
+    err.status === 429 ||
+    err.status === 503 ||
     msg.includes('api key') ||
     msg.includes('invalid_argument') ||
     msg.includes('not found') ||
-    msg.includes('model')
+    msg.includes('model') ||
+    msg.includes('resource_exhausted') ||
+    msg.includes('quota')
   );
 }
 
