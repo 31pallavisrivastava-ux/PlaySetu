@@ -28,6 +28,7 @@ export async function runSearchVenues(args, ctx = {}) {
     sportType: args.sport,
     area: args.area,
     maxPrice: args.maxBudget,
+    skill: args.skill,
     lat: ctx.lat,
     lng: ctx.lng,
     page: 1,
@@ -41,6 +42,9 @@ export async function runSearchVenues(args, ctx = {}) {
     sportType: f.sportType,
     area: f.area,
     address: f.address,
+    lat: f.latitude,
+    lng: f.longitude,
+    googleMapsUrl: buildGoogleMapsUrl(f),
     rating: f.rating,
     distanceKm: f.distanceKm,
     skill: args.skill ?? null,
@@ -51,4 +55,12 @@ export async function runSearchVenues(args, ctx = {}) {
       maxPlayers: c.maxPlayers,
     })),
   }));
+}
+
+function buildGoogleMapsUrl(f) {
+  if (f.latitude != null && f.longitude != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${f.latitude},${f.longitude}`;
+  }
+  const q = encodeURIComponent([f.name, f.address].filter(Boolean).join(', '));
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }

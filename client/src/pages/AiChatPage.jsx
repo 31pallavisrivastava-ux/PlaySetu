@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { getUserLocation } from '../lib/geolocation.js';
@@ -10,17 +10,51 @@ const SUGGESTIONS = [
   'Swimming pool tomorrow morning near Gomti Nagar',
 ];
 
+const GREETING = {
+  role: 'assistant',
+  text: 'Hi! I\'m your PlaySetu assistant — like having Playo in your pocket for Lucknow. Tell me sport, area, time & budget.',
+};
+
+function extractVenues(toolResults) {
+  if (!Array.isArray(toolResults)) return [];
+  const venues = [];
+  const seen = new Set();
+  for (const tr of toolResults) {
+    if (tr.tool !== 'search_venues') continue;
+    const items = Array.isArray(tr.result) ? tr.result : tr.result?.result;
+    if (!Array.isArray(items)) continue;
+    for (const v of items) {
+      if (!v?.venueId || seen.has(v.venueId)) continue;
+      seen.add(v.venueId);
+      venues.push(v);
+    }
+  }
+  return venues.slice(0, 5);
+}
+
 export default function AiChatPage() {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      text: 'Hi! I\'m your PlaySetu assistant — like having Playo in your pocket for Lucknow. Tell me sport, area, time & budget.',
-    },
-  ]);
+  const [messages, setMessages] = useState([GREETING]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const accessToken = useAuthStore((s) => s.accessToken);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get('/ai/history', { params: { limit: 50 } });
+        if (cancelled || !data?.data?.length) return;
+        setMessages(data.data.map((m) => ({ role: m.role, text: m.content })));
+      } catch {
+        // history fetch is best-effort; keep greeting on failure
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
 
   async function send(text) {
     if (!accessToken) {
@@ -38,7 +72,8 @@ export default function AiChatPage() {
         message: userMsg,
         ...(location ? { location } : {}),
       });
-      setMessages((m) => [...m, { role: 'assistant', text: data.data.reply }]);
+      const venues = extractVenues(data.data.toolResults);
+      setMessages((m) => [...m, { role: 'assistant', text: data.data.reply, venues }]);
     } catch (err) {
       setMessages((m) => [
         ...m,
@@ -74,10 +109,7 @@ export default function AiChatPage() {
 
         <div className="flex-1 space-y-3 overflow-y-auto min-h-[320px] mb-4">
           {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               <div
                 className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === 'user'
@@ -87,6 +119,43 @@ export default function AiChatPage() {
               >
                 {msg.text}
               </div>
+              {msg.venues?.length > 0 && (
+                <div className="mt-2 grid gap-2 w-full max-w-[85%]">
+                  {msg.venues.map((v) => (
+                    <div key={v.venueId} className="bg-white border border-slate-200 rounded-xl p-3 text-sm shadow-sm">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <div className="font-semibold text-slate-800">{v.name}</div>
+                          <div className="text-xs text-slate-500">
+                            {v.area ?? v.address}
+                            {v.distanceKm != null && ` · ${v.distanceKm.toFixed(1)} km`}
+                          </div>
+                        </div>
+                        {v.rating > 0 && (
+                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">
+                            ★ {v.rating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                      {v.courts?.[0] && (
+                        <div className="text-xs text-slate-600 mt-1">
+                          From ₹{v.courts[0].pricePerHour}/hr · {v.sportType}
+                        </div>
+                      )}
+                      {v.googleMapsUrl && (
+                        <a
+                          href={v.googleMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-2 text-xs text-playo-green hover:underline"
+                        >
+                          View on Google Maps →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {loading && (

@@ -62,6 +62,13 @@ export async function searchFacilities(query) {
       .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
   }
 
+  if (query.skill) {
+    results = results.filter((f) => {
+      if (!Array.isArray(f.skillLevels) || f.skillLevels.length === 0) return true;
+      return f.skillLevels.includes(query.skill);
+    });
+  }
+
   const payload = { items: results, page: query.page, limit: query.limit };
   await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(payload)).catch(() => {});
   return payload;

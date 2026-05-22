@@ -33,3 +33,14 @@ export async function book(req, res) {
   const data = await orchestrator.handleAutoBook(req.user.id, { slotId });
   res.json({ success: true, data });
 }
+
+export async function history(req, res) {
+  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+  const data = await orchestrator.getHistory(req.user.id, { limit });
+  res.json({ success: true, data });
+}
+
+export async function clearHistory(req, res) {
+  await orchestrator.clearHistory(req.user.id);
+  res.json({ success: true });
+}

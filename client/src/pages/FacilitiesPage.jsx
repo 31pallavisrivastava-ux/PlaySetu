@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
 import VenueCard from '../components/VenueCard.jsx';
+import VenueMap from '../components/VenueMap.jsx';
 import { POPULAR_SPORTS, LUCKNOW_AREAS, formatSport } from '../constants/sports.js';
 
 export default function FacilitiesPage() {
@@ -109,11 +110,16 @@ export default function FacilitiesPage() {
             <p className="text-slate-500 text-sm mt-2">Try another sport or area</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((f) => (
-              <VenueCard key={f.id} facility={f} />
-            ))}
-          </div>
+          <>
+            <div className="mb-8">
+              <VenueMap venues={items} height="420px" />
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.map((f) => (
+                <VenueCard key={f.id} facility={f} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

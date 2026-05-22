@@ -56,7 +56,7 @@ function modelsToTry() {
   return [...new Set([primary, ...FALLBACK_MODELS])];
 }
 
-async function generateWithTools(ai, { contents, declarations }) {
+async function generateWithTools(ai, { contents, declarations, mode = FunctionCallingConfigMode.AUTO }) {
   let lastError;
   for (const model of modelsToTry()) {
     try {
@@ -67,7 +67,7 @@ async function generateWithTools(ai, { contents, declarations }) {
           systemInstruction: SPORTS_ASSISTANT_SYSTEM,
           tools: [{ functionDeclarations: declarations }],
           toolConfig: {
-            functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO },
+            functionCallingConfig: { mode },
           },
         },
       });
@@ -78,6 +78,15 @@ async function generateWithTools(ai, { contents, declarations }) {
     }
   }
   throw lastError;
+}
+
+function summarizeToolResults(toolResults) {
+  const venues = toolResults
+    .filter((tr) => tr.tool === 'search_venues')
+    .flatMap((tr) => (Array.isArray(tr.result) ? tr.result : []));
+  if (venues.length === 0) return null;
+  const names = venues.slice(0, 3).map((v) => v.name).join(', ');
+  return `Here are some options I found: ${names}. Tell me which one you'd like to check availability for.`;
 }
 
 export async function runBookingAgent({ message, userId, history = [], location }) {
@@ -93,7 +102,8 @@ export async function runBookingAgent({ message, userId, history = [], location 
     let contents = buildContents(history, message);
     const toolResults = [];
 
-    for (let step = 0; step < 5; step++) {
+    const MAX_STEPS = 8;
+    for (let step = 0; step < MAX_STEPS; step++) {
       const response = await generateWithTools(ai, { contents, declarations });
 
       const functionCalls = response.functionCalls;
@@ -103,6 +113,11 @@ export async function runBookingAgent({ message, userId, history = [], location 
           toolResults,
         };
       }
+
+      logger.info('agent step', {
+        step,
+        calls: functionCalls.map((c) => ({ name: c.name, args: parseFunctionArgs(c) })),
+      });
 
       const modelParts =
         response.candidates?.[0]?.content?.parts ?? functionCalls.map((fc) => ({ functionCall: fc }));
@@ -126,8 +141,22 @@ export async function runBookingAgent({ message, userId, history = [], location 
       contents.push({ role: 'user', parts: responseParts });
     }
 
+    // Iteration cap hit — force a final text response so the model summarizes what it has.
+    logger.warn('agent hit MAX_STEPS, forcing text response');
+    try {
+      const forced = await generateWithTools(ai, {
+        contents,
+        declarations,
+        mode: FunctionCallingConfigMode.NONE,
+      });
+      const text = forced.text?.trim();
+      if (text) return { reply: text, toolResults };
+    } catch (err) {
+      logger.warn('forced-text pass failed', { message: err.message });
+    }
+
     return {
-      reply: 'I found some options — tell me which venue or slot you prefer.',
+      reply: summarizeToolResults(toolResults) || 'I gathered some info but need a bit more from you — try narrowing the area or budget.',
       toolResults,
     };
   } catch (err) {

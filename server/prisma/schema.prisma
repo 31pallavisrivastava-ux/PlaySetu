@@ -67,11 +67,25 @@ model User {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  facilities Facility[] @relation("FacilityOwner")
-  bookings   Booking[]
-  reviews    Review[]
+  facilities   Facility[]    @relation("FacilityOwner")
+  bookings     Booking[]
+  reviews      Review[]
+  chatMessages ChatMessage[]
 
   @@map("users")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  role      String
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("chat_messages")
 }
 
 model Facility {
@@ -87,6 +101,7 @@ model Facility {
   rating       Float          @default(0)
   openingTime  String         @map("opening_time")
   closingTime  String         @map("closing_time")
+  skillLevels  Json?          @map("skill_levels")
   status       FacilityStatus @default(PENDING)
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
