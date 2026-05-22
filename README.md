@@ -15,7 +15,7 @@ Unified platform to discover courts, turfs, pools, and arenas — book slots in 
 | Database | MySQL + Prisma |
 | Cache / locks | Redis |
 | Realtime | Socket.IO |
-| AI | OpenAI function calling + tool orchestrator |
+| AI | Google Gemini 3 Flash + function calling |
 | Auth | JWT + refresh tokens |
 
 No Docker — run MySQL and Redis locally (or managed services).
@@ -55,7 +55,7 @@ PlaySetu/
 ```bash
 npm install
 cp server/.env.example server/.env
-# Edit DATABASE_URL, JWT secrets, optional OPENAI_API_KEY
+# Edit DATABASE_URL, JWT secrets, GEMINI_API_KEY (https://aistudio.google.com/apikey)
 ```
 
 ### 2. Database
@@ -118,7 +118,8 @@ npm run dev
 Orchestrator in `server/src/modules/ai-agent/`:
 
 - **Tools:** `search_facility`, `get_slots`, `create_booking`, `send_notification`
-- **Agent:** `booking.agent.js` (OpenAI tools loop + keyword fallback without API key)
+- **Agent:** `booking.agent.js` (Gemini tools loop + keyword fallback without API key)
+- **Model:** `gemini-3-flash-preview` (set `GEMINI_MODEL=gemini-3.5-flash` for stable 3.x Flash)
 - **Prompt:** Lucknow sports assistant system prompt
 
 Example:

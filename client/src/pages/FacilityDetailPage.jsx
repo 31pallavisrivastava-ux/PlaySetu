@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import { formatSport } from '../constants/sports.js';
 
 export default function FacilityDetailPage() {
   const { id } = useParams();
@@ -47,51 +48,107 @@ export default function FacilityDetailPage() {
     }
   }
 
-  if (!facility) return <p className="p-10 text-slate-400">Loading…</p>;
+  if (!facility) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+        <div className="h-8 w-48 bg-slate-200 rounded mx-auto animate-pulse" />
+      </div>
+    );
+  }
+
+  const court = facility.courts?.find((c) => c.id === selectedCourt);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold">{facility.name}</h1>
-      <p className="text-slate-400 mt-2">
-        {facility.area} · {facility.address}
-      </p>
-      <p className="mt-4 text-slate-300">{facility.description}</p>
-      <p className="mt-2 text-sm text-slate-500">Pay at the venue — no online payment required.</p>
-
-      <div className="mt-8 space-y-4">
-        <select
-          value={selectedCourt}
-          onChange={(e) => setSelectedCourt(e.target.value)}
-          className="w-full px-4 py-2 rounded-lg bg-slate-900 border border-slate-700"
-        >
-          {facility.courts?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} — ₹{c.pricePerHour}/hr
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="px-4 py-2 rounded-lg bg-slate-900 border border-slate-700"
-        />
+    <div className="bg-slate-50 min-h-screen pb-12">
+      <div className="bg-gradient-to-br from-playo-green to-emerald-700 text-white">
+        <div className="max-w-3xl mx-auto px-4 py-10">
+          <Link to="/facilities" className="text-emerald-100 text-sm hover:text-white">
+            ← Back to venues
+          </Link>
+          <p className="text-emerald-100 text-sm font-medium mt-4 uppercase tracking-wide">
+            {formatSport(facility.sportType)}
+          </p>
+          <h1 className="text-3xl md:text-4xl font-extrabold mt-1">{facility.name}</h1>
+          <div className="flex flex-wrap gap-4 mt-4 text-sm text-emerald-50">
+            <span>★ {facility.rating?.toFixed(1)}</span>
+            <span>📍 {facility.area}</span>
+            <span>{facility.openingTime} – {facility.closingTime}</span>
+          </div>
+        </div>
       </div>
 
-      <h2 className="text-lg font-semibold mt-8 mb-4">Available slots</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {slots.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            disabled={s.availability === 'BOOKED' || bookingLoading}
-            onClick={() => bookSlot(s.id)}
-            className="py-3 rounded-lg border border-slate-700 hover:border-brand-500 disabled:opacity-40 text-sm"
-          >
-            {s.startTime}–{s.endTime}
-            <span className="block text-xs text-slate-500">{s.availability}</span>
-          </button>
-        ))}
+      <div className="max-w-3xl mx-auto px-4 -mt-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 md:p-8">
+          <p className="text-slate-600">{facility.description}</p>
+          <p className="text-sm text-playo-green font-medium mt-3 bg-playo-green-light inline-block px-3 py-1 rounded-full">
+            Pay at venue — no online payment
+          </p>
+          <p className="text-slate-400 text-sm mt-4">{facility.address}</p>
+
+          <hr className="my-8 border-slate-100" />
+
+          <h2 className="font-bold text-playo-navy text-lg">Select court & date</h2>
+          <div className="mt-4 grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 uppercase">Court</label>
+              <select
+                value={selectedCourt}
+                onChange={(e) => setSelectedCourt(e.target.value)}
+                className="input-playo mt-1"
+              >
+                {facility.courts?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} — ₹{c.pricePerHour}/hr
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 uppercase">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="input-playo mt-1"
+              />
+            </div>
+          </div>
+
+          {court && (
+            <p className="mt-4 text-playo-green font-bold text-lg">
+              ₹{court.pricePerHour} <span className="text-slate-400 font-normal text-sm">/ hour</span>
+            </p>
+          )}
+
+          <h2 className="font-bold text-playo-navy text-lg mt-8 mb-4">Available slots</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {slots.length === 0 ? (
+              <p className="col-span-full text-slate-400 text-sm">No slots for this date</p>
+            ) : (
+              slots.map((s) => {
+                const booked = s.availability === 'BOOKED';
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    disabled={booked || bookingLoading}
+                    onClick={() => bookSlot(s.id)}
+                    className={`py-4 rounded-xl border-2 text-sm font-semibold transition ${
+                      booked
+                        ? 'border-slate-100 text-slate-300 bg-slate-50 cursor-not-allowed'
+                        : 'border-playo-green/30 text-playo-navy hover:bg-playo-green hover:text-white hover:border-playo-green'
+                    }`}
+                  >
+                    {s.startTime} – {s.endTime}
+                    <span className="block text-xs font-normal mt-1 opacity-80">
+                      {booked ? 'Booked' : 'Book now'}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

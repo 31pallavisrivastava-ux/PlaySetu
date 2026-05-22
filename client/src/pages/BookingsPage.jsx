@@ -23,33 +23,63 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold mb-6">My bookings</h1>
-      {bookings.length === 0 ? (
-        <p className="text-slate-400">
-          No bookings yet. <Link to="/facilities" className="text-brand-500">Browse facilities</Link>
-        </p>
-      ) : (
-        <ul className="space-y-4">
-          {bookings.map((b) => (
-            <li key={b.id} className="p-5 rounded-xl bg-slate-900 border border-slate-800">
-              <p className="font-semibold">{b.slot?.court?.facility?.name}</p>
-              <p className="text-slate-400 text-sm">
-                {b.slot?.startTime}–{b.slot?.endTime} · {b.bookingStatus} · ₹{b.totalAmount} at venue
-              </p>
+    <div className="bg-slate-50 min-h-screen">
+      <div className="bg-white border-b border-slate-100">
+        <div className="max-w-3xl mx-auto px-4 py-10">
+          <h1 className="text-3xl font-extrabold text-playo-navy">My bookings</h1>
+          <p className="text-slate-500 mt-1">Your upcoming & past venue bookings</p>
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+        {bookings.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center">
+            <p className="text-5xl mb-4">📅</p>
+            <p className="font-semibold text-playo-navy">No bookings yet</p>
+            <p className="text-slate-500 text-sm mt-2 mb-6">Find a court or turf and book your first slot</p>
+            <Link to="/facilities" className="btn-playo">
+              Book a venue
+            </Link>
+          </div>
+        ) : (
+          bookings.map((b) => (
+            <div
+              key={b.id}
+              className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            >
+              <div>
+                <p className="font-bold text-playo-navy text-lg">{b.slot?.court?.facility?.name}</p>
+                <p className="text-slate-500 text-sm mt-1">
+                  {b.slot?.startTime} – {b.slot?.endTime} · {b.slot?.court?.facility?.area}
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <span
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                      b.bookingStatus === 'CONFIRMED'
+                        ? 'bg-playo-green-light text-playo-green'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {b.bookingStatus}
+                  </span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
+                    ₹{b.totalAmount} at venue
+                  </span>
+                </div>
+              </div>
               {b.bookingStatus !== 'CANCELLED' && (
                 <button
                   type="button"
                   onClick={() => cancel(b.id)}
-                  className="mt-3 text-sm text-red-400 hover:text-red-300"
+                  className="text-sm font-medium text-red-500 hover:text-red-600 shrink-0"
                 >
-                  Cancel
+                  Cancel booking
                 </button>
               )}
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

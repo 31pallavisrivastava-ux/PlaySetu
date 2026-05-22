@@ -1,12 +1,11 @@
-import OpenAI from 'openai';
+import { GoogleGenAI, FunctionCallingConfigMode } from '@google/genai';
 import { env } from '../../../config/env.js';
 import { SPORTS_ASSISTANT_SYSTEM } from '../prompts/system.prompt.js';
-import { searchFacilityTool, runSearchFacility } from '../tools/searchFacility.tool.js';
-import { getSlotsTool, runGetSlots } from '../tools/getSlots.tool.js';
-import { createBookingTool, runCreateBooking } from '../tools/booking.tool.js';
-import { sendNotificationTool, runSendNotification } from '../tools/notification.tool.js';
-
-const tools = [searchFacilityTool, getSlotsTool, createBookingTool, sendNotificationTool];
+import { getGeminiToolDeclarations } from '../gemini/declarations.js';
+import { runSearchFacility } from '../tools/searchFacility.tool.js';
+import { runGetSlots } from '../tools/getSlots.tool.js';
+import { runCreateBooking } from '../tools/booking.tool.js';
+import { runSendNotification } from '../tools/notification.tool.js';
 
 const toolRunners = {
   search_facility: runSearchFacility,
@@ -15,53 +14,90 @@ const toolRunners = {
   send_notification: (args, ctx) => runSendNotification(args, ctx.userId),
 };
 
+function buildContents(history, userMessage) {
+  const contents = [];
+  for (const h of history.slice(-8)) {
+    contents.push({
+      role: h.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: h.content }],
+    });
+  }
+  contents.push({ role: 'user', parts: [{ text: userMessage }] });
+  return contents;
+}
+
+function parseFunctionArgs(functionCall) {
+  const raw = functionCall.args ?? functionCall.arguments;
+  if (!raw) return {};
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return raw;
+}
+
 export async function runBookingAgent({ message, userId, history = [] }) {
-  if (!env.OPENAI_API_KEY) {
+  if (!env.GEMINI_API_KEY) {
     return runFallbackAgent(message, userId);
   }
 
-  const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  const messages = [
-    { role: 'system', content: SPORTS_ASSISTANT_SYSTEM },
-    ...history.slice(-8),
-    { role: 'user', content: message },
-  ];
-
-  let response = await openai.chat.completions.create({
-    model: env.OPENAI_MODEL,
-    messages,
-    tools,
-    tool_choice: 'auto',
-  });
-
-  let assistantMessage = response.choices[0].message;
+  const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+  const declarations = getGeminiToolDeclarations();
+  let contents = buildContents(history, message);
   const toolResults = [];
 
-  for (let i = 0; i < 5 && assistantMessage.tool_calls?.length; i++) {
-    messages.push(assistantMessage);
+  for (let step = 0; step < 5; step++) {
+    const response = await ai.models.generateContent({
+      model: env.GEMINI_MODEL,
+      contents,
+      config: {
+        systemInstruction: SPORTS_ASSISTANT_SYSTEM,
+        tools: [{ functionDeclarations: declarations }],
+        toolConfig: {
+          functionCallingConfig: {
+            mode: FunctionCallingConfigMode.AUTO,
+          },
+        },
+      },
+    });
 
-    for (const call of assistantMessage.tool_calls) {
-      const args = JSON.parse(call.function.arguments);
-      const runner = toolRunners[call.function.name];
+    const functionCalls = response.functionCalls;
+    if (!functionCalls?.length) {
+      return {
+        reply: response.text?.trim() || 'Done. Let me know if you need anything else.',
+        toolResults,
+      };
+    }
+
+    const modelParts = response.candidates?.[0]?.content?.parts ?? functionCalls.map((fc) => ({ functionCall: fc }));
+
+    contents = [
+      ...contents,
+      { role: 'model', parts: modelParts },
+    ];
+
+    const responseParts = [];
+    for (const call of functionCalls) {
+      const args = parseFunctionArgs(call);
+      const runner = toolRunners[call.name];
       const result = runner ? await runner(args, { userId }) : { error: 'Unknown tool' };
-      toolResults.push({ tool: call.function.name, result });
-      messages.push({
-        role: 'tool',
-        tool_call_id: call.id,
-        content: JSON.stringify(result),
+      toolResults.push({ tool: call.name, result });
+      responseParts.push({
+        functionResponse: {
+          name: call.name,
+          response: result,
+        },
       });
     }
 
-    response = await openai.chat.completions.create({
-      model: env.OPENAI_MODEL,
-      messages,
-      tools,
-    });
-    assistantMessage = response.choices[0].message;
+    contents.push({ role: 'user', parts: responseParts });
   }
 
   return {
-    reply: assistantMessage.content ?? 'Done. Let me know if you need anything else.',
+    reply: 'I found some options — tell me which venue or slot you prefer.',
     toolResults,
   };
 }
@@ -90,7 +126,7 @@ async function runFallbackAgent(message, userId) {
   return {
     reply:
       facilities.length > 0
-        ? `Found ${facilities.length} options${areaMatch ? ` near ${areaMatch}` : ''}: ${facilities.map((f) => f.name).join(', ')}. Pick a court and say "book slot" with the slot ID, or add OPENAI_API_KEY for full conversational booking.`
+        ? `Found ${facilities.length} options${areaMatch ? ` near ${areaMatch}` : ''}: ${facilities.map((f) => f.name).join(', ')}. Pick a court and say "book slot" with the slot ID, or set GEMINI_API_KEY for full conversational booking.`
         : 'No facilities matched. Try "badminton near Gomti Nagar under 500" or register facilities as an owner.',
     toolResults: [{ tool: 'search_facility', result: facilities }],
     userId,

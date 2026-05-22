@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
-
-const AREAS = ['', 'Gomti Nagar', 'Chinhat', 'Aliganj', 'Hazratganj', 'SAI Lucknow'];
-const SPORTS = ['', 'badminton', 'football', 'cricket', 'swimming'];
+import VenueCard from '../components/VenueCard.jsx';
+import { POPULAR_SPORTS, LUCKNOW_AREAS, formatSport } from '../constants/sports.js';
 
 export default function FacilitiesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
-  const [sportType, setSportType] = useState('');
-  const [area, setArea] = useState('');
+  const [sportType, setSportType] = useState(searchParams.get('sport') || '');
+  const [area, setArea] = useState(searchParams.get('area') || '');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const sport = searchParams.get('sport') || '';
+    const ar = searchParams.get('area') || '';
+    setSportType(sport);
+    setArea(ar);
+  }, [searchParams]);
 
   useEffect(() => {
     setLoading(true);
@@ -20,55 +27,95 @@ export default function FacilitiesPage() {
       .finally(() => setLoading(false));
   }, [sportType, area]);
 
+  function updateFilters(nextSport, nextArea) {
+    const params = new URLSearchParams();
+    if (nextSport) params.set('sport', nextSport);
+    if (nextArea) params.set('area', nextArea);
+    setSearchParams(params);
+  }
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold mb-6">Discover facilities</h1>
-      <div className="flex flex-wrap gap-3 mb-8">
-        <select
-          value={sportType}
-          onChange={(e) => setSportType(e.target.value)}
-          className="px-4 py-2 rounded-lg bg-slate-900 border border-slate-700"
-        >
-          {SPORTS.map((s) => (
-            <option key={s} value={s}>
-              {s || 'All sports'}
-            </option>
-          ))}
-        </select>
-        <select
-          value={area}
-          onChange={(e) => setArea(e.target.value)}
-          className="px-4 py-2 rounded-lg bg-slate-900 border border-slate-700"
-        >
-          {AREAS.map((a) => (
-            <option key={a} value={a}>
-              {a || 'All areas'}
-            </option>
-          ))}
-        </select>
-      </div>
-      {loading ? (
-        <p className="text-slate-400">Loading…</p>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {items.map((f) => (
-            <Link
-              key={f.id}
-              to={`/facilities/${f.id}`}
-              className="block p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-brand-600 transition"
-            >
-              <div className="flex justify-between items-start">
-                <h2 className="font-semibold text-lg">{f.name}</h2>
-                <span className="text-brand-500 text-sm">★ {f.rating?.toFixed(1)}</span>
-              </div>
-              <p className="text-slate-400 text-sm mt-1 capitalize">
-                {f.sportType?.replace('_', ' ')} · {f.area}
-              </p>
-              <p className="text-slate-500 text-sm mt-2 line-clamp-1">{f.address}</p>
-            </Link>
-          ))}
+    <div className="bg-slate-50 min-h-screen pb-8">
+      <div className="bg-white border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 py-10">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-playo-navy">Book venues</h1>
+          <p className="text-slate-500 mt-2">Find courts, turfs & pools near you in Lucknow</p>
+
+          <div className="mt-8">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Sport</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => updateFilters('', area)}
+                className={`chip ${!sportType ? 'chip-active' : 'chip-inactive'}`}
+              >
+                All sports
+              </button>
+              {POPULAR_SPORTS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => updateFilters(s.id, area)}
+                  className={`chip ${sportType === s.id ? 'chip-active' : 'chip-inactive'}`}
+                >
+                  {s.emoji} {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Area</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => updateFilters(sportType, '')}
+                className={`chip ${!area ? 'chip-active' : 'chip-inactive'}`}
+              >
+                All Lucknow
+              </button>
+              {LUCKNOW_AREAS.map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => updateFilters(sportType, a)}
+                  className={`chip ${area === a ? 'chip-active' : 'chip-inactive'}`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <p className="text-sm text-slate-500 mb-6">
+          {loading ? 'Searching…' : `${items.length} venue${items.length !== 1 ? 's' : ''} found`}
+          {sportType && ` · ${formatSport(sportType)}`}
+          {area && ` · ${area}`}
+        </p>
+
+        {loading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 rounded-2xl bg-slate-200 animate-pulse" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
+            <p className="text-4xl mb-4">🏟️</p>
+            <p className="font-semibold text-playo-navy">No venues found</p>
+            <p className="text-slate-500 text-sm mt-2">Try another sport or area</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.map((f) => (
+              <VenueCard key={f.id} facility={f} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

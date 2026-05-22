@@ -32,34 +32,39 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16">
-      <h1 className="text-2xl font-bold mb-6">Create account</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {['name', 'email', 'password', 'location'].map((field) => (
-          <input
-            key={field}
-            type={field === 'password' ? 'password' : field === 'email' ? 'email' : 'text'}
-            value={form[field]}
-            onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-            className="w-full px-4 py-3 rounded-lg bg-slate-900 border border-slate-700 capitalize"
-            placeholder={field.replace(/([A-Z])/g, ' $1')}
-            required={field !== 'location'}
-          />
-        ))}
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-lg bg-brand-600 font-semibold hover:bg-brand-500"
-        >
-          Register
-        </button>
-      </form>
-      <p className="mt-4 text-slate-400 text-sm">
-        <Link to="/login" className="text-brand-500">
-          Already have an account?
-        </Link>
-      </p>
+    <div className="min-h-[70vh] flex items-center justify-center px-4 py-12 bg-slate-50">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+        <h1 className="text-2xl font-extrabold text-playo-navy text-center">Join PlaySetu</h1>
+        <p className="text-slate-500 text-sm text-center mt-1 mb-8">Book sports venues across Lucknow</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {[
+            { key: 'name', label: 'Full name', type: 'text' },
+            { key: 'email', label: 'Email', type: 'email' },
+            { key: 'password', label: 'Password', type: 'password' },
+            { key: 'location', label: 'Preferred area', type: 'text' },
+          ].map(({ key, label, type }) => (
+            <div key={key}>
+              <label className="text-xs font-semibold text-slate-500 uppercase">{label}</label>
+              <input
+                type={type}
+                value={form[key]}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                className="input-playo mt-1"
+                required={key !== 'location'}
+              />
+            </div>
+          ))}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-playo w-full">
+            Create account
+          </button>
+        </form>
+        <p className="mt-6 text-center text-slate-500 text-sm">
+          <Link to="/login" className="text-playo-green font-semibold">
+            Sign in instead
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

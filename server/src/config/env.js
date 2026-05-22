@@ -14,8 +14,8 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   SLOT_LOCK_TTL_SECONDS: z.coerce.number().default(300),
-  OPENAI_API_KEY: z.string().optional(),
-  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-3-flash-preview'),
 });
 
 const parsed = envSchema.safeParse(process.env);

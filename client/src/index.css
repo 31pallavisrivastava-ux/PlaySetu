@@ -1,15 +1,59 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'DM Sans', system-ui, sans-serif;
-  --color-brand-50: #ecfdf5;
-  --color-brand-100: #d1fae5;
-  --color-brand-500: #10b981;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-900: #064e3b;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --color-playo-green: #00a651;
+  --color-playo-green-dark: #008f45;
+  --color-playo-green-light: #e8f8ef;
+  --color-playo-navy: #1a2b3c;
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 font-sans antialiased;
+  @apply bg-white text-slate-800 font-sans antialiased;
+}
+
+.tagline-letter {
+  animation: float-letter 4s ease-in-out infinite;
+}
+
+.tagline-letter:nth-child(odd) {
+  animation-delay: 0.5s;
+}
+
+@keyframes float-letter {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.hero-gradient {
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 45%, #ffffff 100%);
+}
+
+.btn-playo {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-semibold text-white bg-playo-green hover:bg-playo-green-dark transition-colors shadow-md hover:shadow-lg;
+}
+
+.btn-playo-outline {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-semibold text-playo-green border-2 border-playo-green hover:bg-playo-green-light transition-colors;
+}
+
+.input-playo {
+  @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-playo-green/30 focus:border-playo-green;
+}
+
+.chip {
+  @apply px-4 py-2 rounded-full text-sm font-medium border transition-colors;
+}
+
+.chip-active {
+  @apply bg-playo-green text-white border-playo-green;
+}
+
+.chip-inactive {
+  @apply bg-white text-slate-600 border-slate-200 hover:border-playo-green hover:text-playo-green;
 }
