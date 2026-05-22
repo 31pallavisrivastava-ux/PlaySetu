@@ -1,641 +1,155 @@
 # PlaySetu
-## Agentic Sports Infrastructure Discovery & Booking Platform
 
-AI-native sports infrastructure discovery, booking, and recommendation platform for cities like Lucknow.
+**Agentic sports infrastructure discovery & booking for Lucknow**
 
----
-
-# Overview
-
-PlayOS AI is an intelligent sports infrastructure operating system that enables users to:
-
-- Discover sports venues nearby
-- Book slots in real time
-- Get AI-powered recommendations
-- Handle cancellations and rescheduling
-- Use conversational booking
-- Access dynamic pricing and availability
-
-The platform supports:
-
-- Badminton courts
-- Football turfs
-- Cricket nets
-- Swimming pools
-- Tennis courts
-- Kabaddi akharas
-- Indoor stadiums
-- Coaching academies
-
-Primary launch city:
-
-- Lucknow, India
-
-Key target areas:
-
-- Gomti Nagar
-- Chinhat
-- SAI Lucknow Center
-- Lohia Park
+Unified platform to discover courts, turfs, pools, and arenas — book slots in real time, pay online, and use an AI assistant for conversational booking.
 
 ---
 
-# Core Features
+## Stack
 
-## User Features
+| Layer | Technology |
+|-------|------------|
+| Frontend | React, React Router, Tailwind CSS, Axios, Zustand |
+| Backend | Node.js, Express (modular monolith) |
+| Database | MySQL + Prisma |
+| Cache / locks | Redis |
+| Realtime | Socket.IO |
+| AI | OpenAI function calling + tool orchestrator |
+| Auth | JWT + refresh tokens |
 
-- Facility discovery
-- Real-time slot booking
-- AI-assisted search
-- Conversational booking
-- Smart recommendations
-- Nearby sports infrastructure
-- Booking history
-- Instant cancellations
-- Matchmaking
-- Notifications and reminders
-
----
-
-## Facility Owner Features
-
-- Facility onboarding
-- Slot management
-- Dynamic pricing
-- Occupancy analytics
-- Booking management
-- Revenue dashboard
-- Notification automation
+No Docker — run MySQL and Redis locally (or managed services).
 
 ---
 
-# AI Features
-
-## Agentic AI Workflows
-
-The system uses autonomous AI agents for:
-
-- Intent understanding
-- Smart search
-- Booking orchestration
-- Dynamic pricing
-- Support automation
-- Recommendation systems
-
----
-
-## Example
-
-User input:
+## Project structure
 
 ```text
-Book a badminton court near Gomti Nagar tomorrow evening under ₹500
-```
-
-AI workflow:
-
-```text
-Intent Detection
-↓
-Location Resolution
-↓
-Facility Search
-↓
-Availability Check
-↓
-Price Filtering
-↓
-Slot Reservation
-↓
-Booking Confirmation
+PlaySetu/
+├── client/                 # React (Vite)
+├── server/
+│   ├── prisma/
+│   └── src/
+│       ├── config/
+│       ├── modules/        # auth, users, facilities, bookings,
+│       │                   # recommendations, ai-agent, notifications, reviews,
+│       │                   # analytics, admin
+│       ├── shared/
+│       ├── jobs/
+│       └── socket/
+└── package.json            # npm workspaces
 ```
 
 ---
 
-# Tech Stack
+## Quick start
 
-## Frontend
-
-### Web
-
-- js
-- React
-- TailwindCSS
-
-### Mobile
-
-- React Native
-
----
-
-## Backend
-
-- Node.js
-- TypeScript
-- NestJS
-
----
-
-## Databases
-
-### Primary Database
-
-- PostgreSQL
-
-### Cache
-
-- Redis
-
-### Search
-
-- Elasticsearch
-
-### Analytics
-
-- ClickHouse
-
----
-
-## Infrastructure
-
-- AWS
-- Kubernetes
-- Docker
-- Kafka
-
----
-
-## AI Stack
-
-### LLM
-
-- OpenAI GPT models
-- Anthropic Claude
-
-### AI Frameworks
-
-- LangGraph
-- LangChain
-
----
-
-# High-Level Architecture
-
-```text
-                ┌───────────────────┐
-                │ Web/Mobile Apps   │
-                └─────────┬─────────┘
-                          │
-                ┌─────────▼─────────┐
-                │ API Gateway       │
-                └─────────┬─────────┘
-                          │
-       ┌────────────────────────────────┐
-       │        Core Services            │
-       └────────────────────────────────┘
-
- ┌────────────┐ ┌────────────┐ ┌────────────┐
- │ User Svc   │ │ SearchSvc  │ │ BookingSvc │
- └────────────┘ └────────────┘ └────────────┘
-
-  ┌────────────┐ ┌────────────┐
-  │ NotifySvc  │ │ ReviewSvc  │
-  └────────────┘ └────────────┘
-
- ┌────────────┐ ┌────────────┐ ┌────────────┐
- │ AI AgentSvc│ │ PricingSvc │ │ GeoSvc     │
- └────────────┘ └────────────┘ └────────────┘
-
-     ┌────────────────────────────────────┐
-     │ PostgreSQL + Redis 
-     └────────────────────────────────────┘
-```
-
----
-
-# Repository Structure
-
-```text
-playos-ai/
-│
-├── apps/
-│   ├── web/
-│   ├── mobile/
-│   └── admin/
-│
-├── services/
-│   ├── api-gateway/
-│   ├── auth-service/
-│   ├── booking-service/
-│   ├── facility-service/
-│   ├── search-service/
-│   ├── payment-service/
-│   ├── notification-service/
-│   ├── ai-agent-service/
-│   ├── pricing-service/
-│   └── analytics-service/
-│
-├── packages/
-│   ├── shared-types/
-│   ├── ui-components/
-│   ├── utils/
-│   └── configs/
-│
-├── infrastructure/
-│   ├── docker/
-│   ├── kubernetes/
-│   ├── terraform/
-│   └── monitoring/
-│
-├── docs/
-│
-└── README.md
-```
-
----
-
-# Backend Structure (NestJS)
-
-```text
-src/
- ├── modules/
- │    ├── auth/
- │    ├── users/
- │    ├── facilities/
- │    ├── bookings/
- │    ├── payments/
- │    ├── notifications/
- │    ├── ai/
- │    ├── search/
- │    └── analytics/
- │
- ├── common/
- ├── config/
- ├── database/
- ├── kafka/
- ├── redis/
- └── main.ts
-```
-
----
-
-# Database Schema
-
-## Users
-
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  name TEXT,
-  phone TEXT,
-  email TEXT,
-  skill_level TEXT,
-  created_at TIMESTAMP
-);
-```
-
----
-
-## Facilities
-
-```sql
-CREATE TABLE facilities (
-  id UUID PRIMARY KEY,
-  name TEXT,
-  address TEXT,
-  latitude DOUBLE PRECISION,
-  longitude DOUBLE PRECISION,
-  rating NUMERIC,
-  owner_id UUID
-);
-```
-
----
-
-## Slots
-
-```sql
-CREATE TABLE slots (
-  id UUID PRIMARY KEY,
-  facility_id UUID,
-  start_time TIMESTAMP,
-  end_time TIMESTAMP,
-  status TEXT,
-  price NUMERIC
-);
-```
-
----
-
-## Bookings
-
-```sql
-CREATE TABLE bookings (
-  id UUID PRIMARY KEY,
-  user_id UUID,
-  slot_id UUID,
-  payment_status TEXT,
-  booking_status TEXT,
-  created_at TIMESTAMP
-);
-```
-
----
-
-# Booking Consistency
-
-To avoid double bookings:
-
-- Redis distributed locking
-- Transactional DB updates
-- Idempotent APIs
-- Kafka event-driven workflows
-
----
-
-## Booking Flow
-
-```text
-1. Acquire Redis lock
-2. Validate slot
-3. Initiate payment
-4. Create booking
-5. Update slot status
-6. Send notifications
-7. Release lock
-```
-
----
-
-# AI Agent Architecture
-
-## AI Agents
-
-### Search Agent
-
-- Natural language understanding
-- Facility search
-- Semantic filtering
-
----
-
-### Booking Agent
-
-- Slot reservation
-- Retry handling
-- Alternative recommendations
-
----
-
-### Pricing Agent
-
-- Peak hour pricing
-- Demand prediction
-- Occupancy optimization
-
----
-
-### Geo Agent
-
-- Distance optimization
-- ETA calculations
-
----
-
-### Support Agent
-
-- Refunds
-- Rescheduling
-- User support
-
----
-
-# APIs
-
-## Search Facilities
-
-```http
-GET /facilities/search
-```
-
-Example:
-
-```text
-/facilities/search?sport=badminton&lat=26.8467&lng=80.9462&radius=10
-```
-
----
-
-## Create Booking
-
-```http
-POST /bookings
-```
-
-Body:
-
-```json
-{
-  "slotId": "uuid",
-  "paymentMethod": "UPI"
-}
-```
-
----
-
-## AI Chat Endpoint
-
-```http
-POST /ai/chat
-```
-
-Body:
-
-```json
-{
-  "message": "Book football turf near Chinhat tomorrow evening"
-}
-```
-
----
-
-# Scalability Goals
-
-| Metric | Target |
-|---|---|
-| Users | 1M+ |
-| Concurrent Users | 100K |
-| Bookings/hour | 50K |
-| API Latency | <200ms |
-
----
-
-# Scalability Strategy
-
-- Horizontal scaling
-- Kubernetes autoscaling
-- Redis caching
-- Kafka event processing
-- CDN optimization
-- Read replicas
-
----
-
-# Security
-
-- JWT Authentication
-- Refresh Tokens
-- RBAC
-- API Rate Limiting
-- Audit Logs
-- Secure Payments
-- Webhook Signature Validation
-
----
-
-# Notifications
-
-Supported channels:
-
-- Email
-
----
-
-# Monitoring
-
-- Prometheus
-- Grafana
-- ELK Stack
-- OpenTelemetry
-
----
-
-# Development Phases
-
----
-
-## Phase 1 — MVP
-
-Build:
-
-- Authentication
-- Facility onboarding
-- Search
-- Booking
-- Payments
-- Notifications
-
----
-
-## Phase 2 — AI Layer
-
-Build:
-
-- Conversational booking
-- AI recommendations
-- AI search
-
----
-
-## Phase 3 — Agentic Automation
-
-Build:
-
-- Autonomous rescheduling
-- Smart recommendations
-- Dynamic pricing
-- AI workflows
-
----
-
----
-
-# Local Development
-
-## Prerequisites
+### Prerequisites
 
 - Node.js 20+
-- PostgreSQL
-- Redis
+- MySQL 8+
+- Redis 7+ (recommended for slot locks & search cache)
 
----
-
-# Install
+### 1. Install
 
 ```bash
 npm install
+cp server/.env.example server/.env
+# Edit DATABASE_URL, JWT secrets, optional OPENAI_API_KEY
 ```
 
----
+### 2. Database
 
-# Run Development Server
+```bash
+npm run db:push
+npm run db:seed
+```
+
+### 3. Run
 
 ```bash
 npm run dev
 ```
 
+- API: http://localhost:4000  
+- Web: http://localhost:5173  
+
+### Demo accounts (after seed)
+
+| Role | Email | Password |
+|------|-------|----------|
+| User | user@playsetu.in | Password123! |
+| Owner | owner@playsetu.in | Password123! |
+| Admin | admin@playsetu.in | Password123! |
+
 ---
+
+## API overview
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/register` | Register |
+| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/refresh` | Refresh token |
+| GET | `/api/facilities` | Search facilities |
+| GET | `/api/facilities/:id` | Facility detail |
+| GET | `/api/facilities/slots` | Slots by court + date |
+| POST | `/api/bookings` | Book slot (confirmed immediately, pay at venue) |
+| GET | `/api/bookings/my` | User bookings |
+| DELETE | `/api/bookings/:id` | Cancel |
+| POST | `/api/ai/chat` | Conversational AI |
+| POST | `/api/ai/recommend` | AI recommendations |
+| POST | `/api/ai/book` | Agent auto-book |
+| GET | `/api/admin/stats` | Admin stats (ADMIN role) |
+
 ---
 
-# Environment Variables
+## Booking engine
 
-```env
-PORT=3000
+1. **Redis lock** — `lock:slot:{id}` during transaction  
+2. **MySQL transaction** — `SELECT … FOR UPDATE` on slot row  
+3. Slot → `BOOKED`, booking → `CONFIRMED` (no online payment)  
+4. User pays at the venue; `paymentStatus` stays `PENDING` until you add a gateway later  
 
-DATABASE_URL=
-REDIS_URL=
+---
 
-JWT_SECRET=
+## AI agent
 
-OPENAI_API_KEY=
+Orchestrator in `server/src/modules/ai-agent/`:
 
+- **Tools:** `search_facility`, `get_slots`, `create_booking`, `send_notification`
+- **Agent:** `booking.agent.js` (OpenAI tools loop + keyword fallback without API key)
+- **Prompt:** Lucknow sports assistant system prompt
+
+Example:
+
+```text
+Book football turf near Chinhat tomorrow evening for 10 players under ₹2500
 ```
 
 ---
 
-# Recommended Development Strategy
+## Deployment (no Docker)
 
-IMPORTANT:
-
-Do NOT begin with microservices.
-
-Start with:
-
-- Modular monolith
-- Clean architecture
-- Domain-driven modules
-
-Then gradually extract services.
+- **API:** PM2 + Nginx reverse proxy on Ubuntu  
+- **DB:** AWS RDS or DigitalOcean Managed MySQL  
+- **Redis:** ElastiCache or managed Redis  
+- **Client:** `npm run build` → static host (S3 + CloudFront, Vercel, etc.)
 
 ---
 
+## MVP roadmap
 
-> AI Operating System for Sports Infrastructure
-
-Future expansion:
-
-- Tournaments
-- AI coaching
-- Sports commerce
-- Community matchmaking
-- Wearable integrations
-- Franchise analytics
-- Smart stadium integrations
+| Week | Focus |
+|------|--------|
+| 1 | Auth, facility CRUD, search ✅ |
+| 2 | Booking engine ✅ (pay at venue, no gateway) |
+| 3 | AI recommendations & chat ✅ |
+| 4 | Notifications, admin panel (partial) |
+| 5 | Scale, tests, production deploy |
 
 ---
 
-# License
+## License
 
-MIT License
-
----
-
-# Contributors
-
-Core Engineering Team
-
-- Backend Engineers
-- AI Engineers
-- DevOps Engineers
-- Mobile Developers
-- Product Designers
+Proprietary — PlaySetu / Lucknow sports ecosystem.
