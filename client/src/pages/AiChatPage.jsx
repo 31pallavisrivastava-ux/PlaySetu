@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { getUserLocation } from '../lib/geolocation.js';
 import { useAuthStore } from '../store/authStore.js';
+import ChatMarkdown from '../components/ChatMarkdown.jsx';
 
 const SUGGESTIONS = [
   'Book a badminton court near Gomti Nagar tomorrow evening under ₹500',
@@ -117,7 +118,7 @@ export default function AiChatPage() {
                     : 'bg-white border border-slate-100 text-slate-700 shadow-sm rounded-bl-md'
                 }`}
               >
-                {msg.text}
+                {msg.role === 'assistant' ? <ChatMarkdown content={msg.text} /> : msg.text}
               </div>
               {msg.venues?.length > 0 && (
                 <div className="mt-2 grid gap-2 w-full max-w-[85%]">
