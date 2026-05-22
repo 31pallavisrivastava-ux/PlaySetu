@@ -1,9 +1,4 @@
 # PlaySetu
-
-# accessibilty_warriors-gdg_hackathon
-
-
-# PlayOS AI
 ## Agentic Sports Infrastructure Discovery & Booking Platform
 
 AI-native sports infrastructure discovery, booking, and recommendation platform for cities like Lucknow.
