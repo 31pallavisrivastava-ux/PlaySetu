@@ -34,7 +34,8 @@ function FitBounds({ points }) {
   return null;
 }
 
-export default function VenueMap({ venues, height = '400px' }) {
+export default function VenueMap({ venues, height = '400px', className = '' }) {
+  const useStyleHeight = !className.match(/\bh-/);
   const points = useMemo(
     () =>
       (venues || []).filter(
@@ -48,7 +49,10 @@ export default function VenueMap({ venues, height = '400px' }) {
     : [LUCKNOW_FALLBACK.lat, LUCKNOW_FALLBACK.lng];
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm" style={{ height }}>
+    <div
+      className={`rounded-2xl overflow-hidden border border-slate-200 shadow-sm ${className}`}
+      style={useStyleHeight ? { height } : undefined}
+    >
       <MapContainer center={center} zoom={12} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

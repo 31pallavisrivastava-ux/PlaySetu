@@ -52,6 +52,11 @@ export default function BookingsPage() {
                 <p className="text-slate-500 text-sm mt-1">
                   {b.slot?.startTime} – {b.slot?.endTime} · {b.slot?.court?.facility?.area}
                 </p>
+                {b.playerCount != null && (
+                  <p className="text-slate-500 text-sm mt-1">
+                    {b.playerCount} {b.playerCount === 1 ? 'player' : 'players'} in your group
+                  </p>
+                )}
                 <div className="flex gap-2 mt-3">
                   <span
                     className={`text-xs font-semibold px-2.5 py-1 rounded-full ${

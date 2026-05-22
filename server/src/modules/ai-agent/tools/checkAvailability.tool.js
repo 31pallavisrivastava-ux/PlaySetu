@@ -1,4 +1,5 @@
 import { prisma } from '../../../config/db.js';
+import { getCourtPlayerCapacity } from '../../../shared/constants/sportPlayerLimits.js';
 
 export const checkAvailabilityTool = {
   type: 'function',
@@ -50,20 +51,36 @@ export async function runCheckAvailability(args) {
   const slots = await prisma.slot.findMany({
     where,
     orderBy: [{ startTime: 'asc' }],
-    include: { court: { select: { id: true, name: true, pricePerHour: true } } },
+    include: {
+      court: {
+        select: {
+          id: true,
+          name: true,
+          pricePerHour: true,
+          minPlayers: true,
+          maxPlayers: true,
+          facility: { select: { sportType: true } },
+        },
+      },
+    },
   });
 
   return {
     venueId: args.venueId,
     date: args.date,
-    slots: slots.map((s) => ({
-      slotId: s.id,
-      courtId: s.court.id,
-      courtName: s.court.name,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      pricePerHour: Number(s.court.pricePerHour),
-      availability: s.availability,
-    })),
+    slots: slots.map((s) => {
+      const capacity = getCourtPlayerCapacity(s.court, s.court.facility.sportType);
+      return {
+        slotId: s.id,
+        courtId: s.court.id,
+        courtName: s.court.name,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        pricePerHour: Number(s.court.pricePerHour),
+        availability: s.availability,
+        minPlayers: capacity.minPlayers,
+        maxPlayers: capacity.maxPlayers,
+      };
+    }),
   };
 }

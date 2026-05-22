@@ -79,8 +79,10 @@ npm run dev
 | Role | Email | Password |
 |------|-------|----------|
 | User | user@playsetu.in | Password123! |
-| Owner | owner@playsetu.in | Password123! |
+| Owner / venue manager | owner@playsetu.in | Password123! → `/owner` dashboard |
 | Admin | admin@playsetu.in | Password123! |
+
+**Seed venues:** 18 Lucknow facilities across all app areas (Gomti Nagar, Chinhat, Aliganj, Indira Nagar, Hazratganj, SAI Lucknow, Lohia Park, Jankipuram, Vikas Nagar), including **Colvin Cricket Academy** (cricket nets on University Rd, Aliganj). Re-run `npm run db:seed` to refresh demo slots and owner venues.
 
 ---
 
@@ -94,8 +96,15 @@ npm run dev
 | GET | `/api/facilities` | Search facilities |
 | GET | `/api/facilities/:id` | Facility detail |
 | GET | `/api/facilities/slots` | Slots by court + date |
-| POST | `/api/bookings` | Book slot (confirmed immediately, pay at venue) |
+| POST | `/api/bookings` | Book slot — body: `{ slotId, playerCount }` (validated per sport, e.g. badminton 2–4) |
 | GET | `/api/bookings/my` | User bookings |
+| GET | `/api/owner/summary` | Venue manager stats (OWNER) |
+| GET | `/api/owner/slots` | Slot schedule for owner's venues |
+| GET | `/api/owner/bookings` | Bookings on owner's venues |
+| POST | `/api/owner/facilities` | Create venue (ACTIVE) |
+| PATCH | `/api/owner/facilities/:id` | Update venue |
+| PATCH | `/api/owner/facilities/:id/status` | Enable (`ACTIVE`) / disable (`INACTIVE`) |
+| DELETE | `/api/owner/facilities/:id` | Delete venue (blocked if active bookings) |
 | DELETE | `/api/bookings/:id` | Cancel |
 | POST | `/api/ai/chat` | Conversational AI |
 | POST | `/api/ai/recommend` | AI recommendations |

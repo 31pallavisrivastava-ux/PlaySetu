@@ -90,7 +90,7 @@ export default function FacilitiesPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <p className="text-sm text-slate-500 mb-6">
           {loading ? 'Searching…' : `${items.length} venue${items.length !== 1 ? 's' : ''} found`}
           {sportType && ` · ${formatSport(sportType)}`}
@@ -98,10 +98,13 @@ export default function FacilitiesPage() {
         </p>
 
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 rounded-2xl bg-slate-200 animate-pulse" />
-            ))}
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            <div className="lg:flex-1 min-w-0 h-[320px] lg:h-[calc(100vh-14rem)] rounded-2xl bg-slate-200 animate-pulse" />
+            <div className="lg:w-[32%] lg:max-w-sm space-y-3 min-w-0">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-36 rounded-2xl bg-slate-200 animate-pulse" />
+              ))}
+            </div>
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
@@ -110,16 +113,16 @@ export default function FacilitiesPage() {
             <p className="text-slate-500 text-sm mt-2">Try another sport or area</p>
           </div>
         ) : (
-          <>
-            <div className="mb-8">
-              <VenueMap venues={items} height="420px" />
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-stretch">
+            <div className="lg:flex-1 min-w-0 lg:sticky lg:top-24 lg:self-start h-[360px] sm:h-[440px] lg:h-[calc(100vh-14rem)]">
+              <VenueMap venues={items} height="100%" className="h-full" />
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="lg:w-[32%] lg:max-w-sm min-w-0 space-y-3 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pl-1">
               {items.map((f) => (
-                <VenueCard key={f.id} facility={f} />
+                <VenueCard key={f.id} facility={f} compact />
               ))}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

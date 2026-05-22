@@ -4,12 +4,16 @@ import { getRedis } from '../../config/redis.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { haversineKm } from '../../shared/utils/distance.js';
 import { CACHE_KEYS, CACHE_TTL } from '../../shared/constants/index.js';
+import { invalidateFacilitySearchCache } from '../../shared/helpers/invalidateFacilityCache.js';
+import { getCourtPlayerCapacity } from '../../shared/constants/sportPlayerLimits.js';
 
 export async function createFacility(ownerId, data) {
-  return prisma.facility.create({
+  const facility = await prisma.facility.create({
     data: { ...data, ownerId, status: 'PENDING' },
     include: { courts: true },
   });
+  await invalidateFacilitySearchCache();
+  return facility;
 }
 
 export async function getFacilityById(id) {
@@ -78,8 +82,23 @@ export async function createCourt(facilityId, ownerId, data) {
   const facility = await prisma.facility.findFirst({ where: { id: facilityId, ownerId } });
   if (!facility) throw new AppError('Facility not found or access denied', 404, 'NOT_FOUND');
 
+  const capacity = getCourtPlayerCapacity(
+    { minPlayers: data.minPlayers, maxPlayers: data.maxPlayers },
+    facility.sportType
+  );
+  if (data.minPlayers != null && data.minPlayers > capacity.maxPlayers) {
+    throw new AppError('minPlayers cannot exceed maxPlayers', 400, 'INVALID_PLAYER_LIMITS');
+  }
+
   return prisma.court.create({
-    data: { facilityId, ...data },
+    data: {
+      facilityId,
+      name: data.name,
+      type: data.type,
+      pricePerHour: data.pricePerHour,
+      minPlayers: capacity.minPlayers,
+      maxPlayers: capacity.maxPlayers,
+    },
   });
 }
 
@@ -111,13 +130,25 @@ export async function generateSlots(ownerId, { courtId, date, slots }) {
 }
 
 export async function getAvailableSlots(courtId, date) {
+  const court = await prisma.court.findFirst({
+    where: { id: courtId, status: 'ACTIVE' },
+    include: { facility: { select: { sportType: true } } },
+  });
+  if (!court) throw new AppError('Court not found', 404, 'NOT_FOUND');
+
+  const capacity = getCourtPlayerCapacity(court, court.facility.sportType);
   const slotDate = new Date(`${date}T00:00:00.000Z`);
-  return prisma.slot.findMany({
-    where: {
-      courtId,
-      date: slotDate,
-      availability: { in: ['AVAILABLE', 'LOCKED'] },
-    },
+  const slots = await prisma.slot.findMany({
+    where: { courtId, date: slotDate },
     orderBy: { startTime: 'asc' },
   });
+
+  return {
+    capacity,
+    slots: slots.map((s) => ({
+      ...s,
+      booked: s.availability === 'BOOKED',
+      bookable: s.availability === 'AVAILABLE',
+    })),
+  };
 }

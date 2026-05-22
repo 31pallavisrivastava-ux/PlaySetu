@@ -1,8 +1,9 @@
 import { prisma } from '../../config/db.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { acquireSlotLock, releaseSlotLock } from '../../shared/helpers/slotLock.js';
+import { validatePlayerCount } from '../../shared/constants/sportPlayerLimits.js';
 
-export async function createBooking(userId, slotId) {
+export async function createBooking(userId, slotId, playerCount) {
   const acquired = await acquireSlotLock(slotId, userId);
   if (!acquired) {
     throw new AppError('Slot is temporarily locked by another user', 409, 'SLOT_LOCKED');
@@ -19,8 +20,28 @@ export async function createBooking(userId, slotId) {
 
       const court = await tx.court.findUnique({
         where: { id: slot.courtId },
-        include: { facility: true },
+        include: { facility: { select: { sportType: true, status: true } } },
       });
+      if (!court) throw new AppError('Court not found', 404, 'NOT_FOUND');
+      if (court.facility.status !== 'ACTIVE') {
+        throw new AppError('Venue is not available for booking', 400, 'VENUE_INACTIVE');
+      }
+
+      const capacityCheck = validatePlayerCount(playerCount, court, court.facility.sportType);
+      if (!capacityCheck.ok) {
+        throw new AppError(capacityCheck.message, 400, 'INVALID_PLAYER_COUNT');
+      }
+
+      const existing = await tx.booking.findFirst({
+        where: {
+          slotId,
+          userId,
+          bookingStatus: { in: ['CONFIRMED', 'PENDING'] },
+        },
+      });
+      if (existing) {
+        throw new AppError('You already have a booking for this slot', 409, 'DUPLICATE_BOOKING');
+      }
 
       await tx.slot.update({
         where: { id: slotId },
@@ -31,6 +52,7 @@ export async function createBooking(userId, slotId) {
         data: {
           userId,
           slotId,
+          playerCount,
           bookingStatus: 'CONFIRMED',
           paymentStatus: 'PENDING',
           totalAmount: court.pricePerHour,
@@ -87,7 +109,7 @@ export async function getMyBookings(userId) {
         include: {
           court: {
             include: {
-              facility: { select: { id: true, name: true, area: true, address: true } },
+              facility: { select: { id: true, name: true, area: true, address: true, sportType: true } },
             },
           },
         },

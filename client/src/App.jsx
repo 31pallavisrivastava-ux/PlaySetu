@@ -7,6 +7,7 @@ import FacilitiesPage from './pages/FacilitiesPage.jsx';
 import FacilityDetailPage from './pages/FacilityDetailPage.jsx';
 import BookingsPage from './pages/BookingsPage.jsx';
 import AiChatPage from './pages/AiChatPage.jsx';
+import OwnerDashboardPage from './pages/OwnerDashboardPage.jsx';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="facilities" element={<FacilitiesPage />} />
         <Route path="facilities/:id" element={<FacilityDetailPage />} />
         <Route path="bookings" element={<BookingsPage />} />
+        <Route path="owner" element={<OwnerDashboardPage />} />
         <Route path="ai" element={<AiChatPage />} />
       </Route>
     </Routes>

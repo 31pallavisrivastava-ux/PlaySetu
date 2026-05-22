@@ -1,6 +1,8 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 
+const isVenueManager = (role) => role === 'OWNER' || role === 'ADMIN';
+
 const navLinkClass = ({ isActive }) =>
   `text-sm font-semibold transition-colors ${
     isActive ? 'text-playo-green' : 'text-slate-600 hover:text-playo-green'
@@ -31,13 +33,21 @@ export default function Layout() {
             <NavLink to="/" end className={navLinkClass}>
               Home
             </NavLink>
-            <NavLink to="/facilities" className={navLinkClass}>
-              Book
-            </NavLink>
-            <NavLink to="/ai" className={navLinkClass}>
-              AI Assist
-            </NavLink>
-            {user && (
+            {user && isVenueManager(user.role) ? (
+              <NavLink to="/owner" className={navLinkClass}>
+                Manage venue
+              </NavLink>
+            ) : (
+              <>
+                <NavLink to="/facilities" className={navLinkClass}>
+                  Book
+                </NavLink>
+                <NavLink to="/ai" className={navLinkClass}>
+                  AI Assist
+                </NavLink>
+              </>
+            )}
+            {user && !isVenueManager(user.role) && (
               <NavLink to="/bookings" className={navLinkClass}>
                 My Bookings
               </NavLink>
@@ -123,18 +133,27 @@ export default function Layout() {
           <span>🏠</span>
           <span className="text-[10px]">Home</span>
         </NavLink>
-        <NavLink to="/facilities" className={mobileNavClass}>
-          <span>📅</span>
-          <span className="text-[10px]">Book</span>
-        </NavLink>
-        <NavLink to="/ai" className={mobileNavClass}>
-          <span>✨</span>
-          <span className="text-[10px]">AI</span>
-        </NavLink>
-        <NavLink to="/bookings" className={mobileNavClass}>
-          <span>📋</span>
-          <span className="text-[10px]">Bookings</span>
-        </NavLink>
+        {user && isVenueManager(user.role) ? (
+          <NavLink to="/owner" className={mobileNavClass}>
+            <span>🏟️</span>
+            <span className="text-[10px]">Manage</span>
+          </NavLink>
+        ) : (
+          <>
+            <NavLink to="/facilities" className={mobileNavClass}>
+              <span>📅</span>
+              <span className="text-[10px]">Book</span>
+            </NavLink>
+            <NavLink to="/ai" className={mobileNavClass}>
+              <span>✨</span>
+              <span className="text-[10px]">AI</span>
+            </NavLink>
+            <NavLink to="/bookings" className={mobileNavClass}>
+              <span>📋</span>
+              <span className="text-[10px]">Bookings</span>
+            </NavLink>
+          </>
+        )}
       </nav>
       <div className="h-16 md:hidden" />
     </div>

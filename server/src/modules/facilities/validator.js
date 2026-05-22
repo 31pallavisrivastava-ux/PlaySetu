@@ -28,6 +28,7 @@ export const createCourtSchema = z.object({
   name: z.string().min(1),
   type: z.string().min(1),
   pricePerHour: z.coerce.number().positive(),
+  minPlayers: z.coerce.number().int().positive().optional(),
   maxPlayers: z.coerce.number().int().positive().default(10),
 });
 

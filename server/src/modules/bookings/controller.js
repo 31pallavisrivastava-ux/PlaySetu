@@ -2,8 +2,8 @@ import * as bookingService from './service.js';
 import { createBookingSchema } from './validator.js';
 
 export async function create(req, res) {
-  const { slotId } = createBookingSchema.parse(req.body);
-  const booking = await bookingService.createBooking(req.user.id, slotId);
+  const { slotId, playerCount } = createBookingSchema.parse(req.body);
+  const booking = await bookingService.createBooking(req.user.id, slotId, playerCount);
   res.status(201).json({ success: true, data: booking });
 }
 

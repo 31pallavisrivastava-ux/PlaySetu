@@ -13,9 +13,13 @@ export const bookSlotTool = {
         venueId: { type: 'string', description: 'Facility id' },
         date: { type: 'string', description: 'ISO8601 date or YYYY-MM-DD' },
         timeSlot: { type: 'string', description: '"HH:MM-HH:MM"' },
+        playerCount: {
+          type: 'number',
+          description: 'Number of players in the group (must match sport limits, e.g. 2–4 for badminton)',
+        },
         userId: { type: 'string', description: 'Ignored — server uses authenticated session' },
       },
-      required: ['venueId', 'date', 'timeSlot'],
+      required: ['venueId', 'date', 'timeSlot', 'playerCount'],
     },
   },
 };
@@ -40,15 +44,18 @@ export async function runBookSlot(args, ctx = {}) {
       availability: 'AVAILABLE',
       court: { facilityId: args.venueId, status: 'ACTIVE' },
     },
+    include: { court: { include: { facility: { select: { name: true, sportType: true } } } } },
     orderBy: { court: { pricePerHour: 'asc' } },
   });
 
   if (!slot) throw new AppError('No available slot matches that venue/date/time', 404, 'SLOT_UNAVAILABLE');
 
-  const booking = await bookingService.createBooking(ctx.userId, slot.id);
+  const playerCount = Number(args.playerCount);
+  const booking = await bookingService.createBooking(ctx.userId, slot.id, playerCount);
   return {
     bookingId: booking.id,
     status: booking.bookingStatus,
+    playerCount: booking.playerCount,
     amount: Number(booking.totalAmount),
     venue: booking.slot?.court?.facility?.name,
     court: booking.slot?.court?.name,

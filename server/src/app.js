@@ -15,6 +15,7 @@ import aiRoutes from './modules/ai-agent/routes.js';
 import reviewRoutes from './modules/reviews/routes.js';
 import analyticsRoutes from './modules/analytics/routes.js';
 import adminRoutes from './modules/admin/routes.js';
+import ownerRoutes from './modules/owner/routes.js';
 
 export function createApp() {
   const app = express();
@@ -47,6 +48,7 @@ export function createApp() {
   app.use('/api/reviews', reviewRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/owner', ownerRoutes);
 
   app.use(errorHandler);
 

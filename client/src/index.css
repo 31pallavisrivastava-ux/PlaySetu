@@ -47,7 +47,7 @@ body {
 }
 
 .chip {
-  @apply px-4 py-2 rounded-full text-sm font-medium border transition-colors;
+  @apply px-4 py-2 rounded-full text-sm font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-playo-green/40 focus-visible:ring-offset-1;
 }
 
 .chip-active {

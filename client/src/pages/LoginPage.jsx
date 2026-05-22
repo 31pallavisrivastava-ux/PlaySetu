@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import { homePathForRole } from '../utils/authRedirect.js';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('user@playsetu.in');
@@ -18,7 +19,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       setAuth(data.data);
-      navigate('/facilities');
+      navigate(homePathForRole(data.data.user?.role));
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Login failed');
     } finally {
@@ -68,7 +69,9 @@ export default function LoginPage() {
             Create account
           </Link>
         </p>
-        <p className="mt-3 text-center text-xs text-slate-400">Demo: user@playsetu.in / Password123!</p>
+        <p className="mt-3 text-center text-xs text-slate-400">
+          Player: user@playsetu.in · Venue manager: owner@playsetu.in · Password123!
+        </p>
       </div>
     </div>
   );
