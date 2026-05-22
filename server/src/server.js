@@ -22,6 +22,14 @@ async function bootstrap() {
     initSocket(server, env.CLIENT_URL);
     startCronJobs();
 
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        logger.error(`Port ${env.PORT} is already in use. Stop the other process: lsof -ti:${env.PORT} | xargs kill -9`);
+        process.exit(1);
+      }
+      throw err;
+    });
+
     server.listen(env.PORT, () => {
       logger.info(`PlaySetu API running on http://localhost:${env.PORT}`);
     });

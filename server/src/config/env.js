@@ -1,7 +1,11 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Always load server/.env (npm workspaces may run with cwd = repo root)
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -15,7 +19,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   SLOT_LOCK_TTL_SECONDS: z.coerce.number().default(300),
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-3-flash-preview'),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
 });
 
 const parsed = envSchema.safeParse(process.env);

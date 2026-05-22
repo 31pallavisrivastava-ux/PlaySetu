@@ -16,7 +16,17 @@ export function errorHandler(err, _req, res, _next) {
     });
   }
 
-  logger.error(err);
+  if (err?.name === 'ApiError') {
+    return res.status(err.status >= 400 && err.status < 500 ? err.status : 502).json({
+      success: false,
+      error: {
+        code: 'GEMINI_API_ERROR',
+        message: err.message || 'Gemini API request failed',
+      },
+    });
+  }
+
+  logger.error(err?.message || err, { name: err?.name, status: err?.status });
   return res.status(500).json({
     success: false,
     error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' },
